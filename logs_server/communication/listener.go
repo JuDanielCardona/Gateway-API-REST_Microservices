@@ -26,7 +26,7 @@ func ListenNotifications() {
 	}
 	defer nc.Close()
 
-	subscribes := []string{"UsersServer", "LogsServer", "HealthServer", "ProfilesServer"}
+	subscribes := []string{"UsersServer", "LogsServer", "HealthServer", "ProfilesServer", "GatewayServer"}
 
 	for _, subject := range subscribes {
 		sub, err := nc.Subscribe(subject, func(m *nats.Msg) {

@@ -21,26 +21,7 @@ INSERT INTO users (name, password, email) VALUES
 ('María', 'montaña', 'maria@email.com'),
 ('Lucía', 'agua', 'lucia@email.com'),
 ('Miguel', 'aire', 'miguel@email.com'),
-('Andrés', 'fuego', 'andres@email.com'),
-('Santiago', 'tierra', 'santiago@email.com'),
-('Camila', 'árbol', 'camila@email.com'),
-('Valentina', 'cielo', 'valentina@email.com'),
-('Juliana', 'nube', 'juliana@email.com'),
-('Antonio', 'lluvia', 'antonio@email.com'),
-('Javier', 'viento', 'javier@email.com'),
-('Gabriel', 'nieve', 'gabriel@email.com'),
-('Mateo', 'rayo', 'mateo@email.com'),
-('Daniel', 'trueno', 'daniel@email.com'),
-('Lorenzo', 'rayo', 'lorenzo@email.com'),
-('Manuel', 'trueno', 'manuel@email.com'),
-('Ismael', 'lluvia', 'ismael@email.com'),
-('Raúl', 'viento', 'raul@email.com'),
-('Joaquín', 'nieve', 'joaquin@email.com'),
-('Fernando', 'nube', 'fernando@email.com'),
-('Adrián', 'cielo', 'adrian@email.com'),
-('Félix', 'árbol', 'felix@email.com'),
-('Rafael', 'tierra', 'rafael@email.com');
-
+('Andrés', 'fuego', 'andres@email.com');
 
 
 -- psql -U admin -d users_db -f init.sql

@@ -106,20 +106,11 @@ async def UpdateProfile_handler():
     try:
         data = request.get_json()
 
-        required_fields = ['name', 'url', 'nickname', 'public_info', 'messaging', 'biography', 'organization', 'country', 'social_media']
+        required_fields = ['name', 'url', 'nickname', 'public_info', 'messaging', 'biography', 'organization', 'country', 'social_media', 'email']
+        
         for field in required_fields:
-            if field not in data:
-                log = Log(
-                    app_name="PROFILE-API",
-                    log_type="ERROR",
-                    module="UPDATE-PROFILE",
-                    log_date_time=datetime.datetime.now().isoformat(),
-                    summary="Error in information",
-                    description=f"Missing field {field}")
-                await sendLog(log)
-                return 'Error: Missing field ' + field, 400
-
-            if not isinstance(data[field], str):
+            if field in data and not isinstance(data[field], str):
+                print("info: " + data[field])
                 log = Log(
                     app_name="PROFILE-API",
                     log_type="ERROR",
@@ -128,9 +119,9 @@ async def UpdateProfile_handler():
                     summary="Error in information",
                     description=f"Field is not a String: {field}")
                 await sendLog(log)
-                return 'Error: Invalid data type for field ' + field + '. Expected string.', 400
+                return f'Error: Invalid data type for field {field}. Expected string.', 400
 
-        if not isValidToken(request, data['email']):
+        if not isValidToken(request, data.get('email')):
             log = Log(
                 app_name="PROFILE-API",
                 log_type="ERROR",
@@ -146,15 +137,9 @@ async def UpdateProfile_handler():
         if not profile:
             return 'Error: Profile not found', 404
 
-        profile.name = data['name']
-        profile.url = data['url']
-        profile.nickname = data['nickname']
-        profile.public_info = data['public_info']
-        profile.messaging = data['messaging']
-        profile.biography = data['biography']
-        profile.organization = data['organization']
-        profile.country = data['country']
-        profile.social_media = data['social_media']
+        for field in required_fields:
+            if field in data and data[field]:
+                setattr(profile, field, data[field])
 
         database.commit()
 
@@ -181,7 +166,6 @@ async def UpdateProfile_handler():
         )
         await sendLog(log)
         return 'error: ' + error_message, 400
-
 
 async def DeleteProfile_handler(email):
     try:
@@ -228,6 +212,62 @@ async def DeleteProfile_handler(email):
         )
         await sendLog(log)
         return 'error: ' + error_message, 400
+    
+async def GetProfile_handler(email):
+    try:
+        if not isValidToken(request, email):
+            log = Log(
+                app_name="PROFILE-API",
+                log_type="ERROR",
+                module="GET-PROFILE",
+                log_date_time=datetime.datetime.now().isoformat(),
+                summary="Failed to get profile",
+                description="Invalid token provided")
+            await sendLog(log)
+            return {'error': 'Invalid token provided'}, 404
+
+        profile = database.query(Profile).filter_by(email=email).first()
+
+        if not profile:
+            return {'error': 'Profile not found'}, 404
+
+        profile_data = {
+            'name': profile.name,
+            'url': profile.url,
+            'nickname': profile.nickname,
+            'public_info': profile.public_info,
+            'messaging': profile.messaging,
+            'biography': profile.biography,
+            'organization': profile.organization,
+            'country': profile.country,
+            'social_media': profile.social_media,
+            'email': profile.email
+        }
+
+        log = Log(
+            app_name="PROFILE-API",
+            log_type="INFO",
+            module="GET-PROFILE",
+            log_date_time=datetime.datetime.now().isoformat(),
+            summary="Profile retrieved successfully",
+            description="A profile has been retrieved successfully"
+        )
+        await sendLog(log)
+        return profile_data, 200
+
+    except Exception as e:
+        error_message = f'Unexpected error: {str(e)}'
+        log = Log(
+            app_name="PROFILE-API",
+            log_type="ERROR",
+            module="GET-PROFILE",
+            log_date_time=datetime.datetime.now().isoformat(),
+            summary="Unexpected error",
+            description=error_message
+        )
+        await sendLog(log)
+        return {'error': error_message}, 400
+
 
 async def GetAllProfiles_handler():
     try:

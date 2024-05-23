@@ -21,7 +21,7 @@ func main() {
 	database.DB.AutoMigrate(models.User{})
 
 	router := mux.NewRouter()
-	funtions_EndPoints(router.PathPrefix("/api").Subrouter())
+	funtions_EndPoints(router.PathPrefix("/user").Subrouter())
 
 	StartTime = time.Now()
 	fmt.Println("----------INIT USER SERVER " + PORT + " at: " + StartTime.Format("15:04:05") + "----------")
@@ -33,7 +33,7 @@ func funtions_EndPoints(router *mux.Router) {
 	router.HandleFunc("/add", handlers.AddUser_handler).Methods("POST")
 	router.HandleFunc("/update", handlers.UpdateUser_handler).Methods("PUT")
 	router.HandleFunc("/delete/{email}", handlers.DeleteUser_handler).Methods("DELETE")
-	router.HandleFunc("/search/{id}", handlers.GetUserById_handler).Methods("GET")
+	router.HandleFunc("/search/{email}", handlers.GetUserByEmail_handler).Methods("GET")
 	router.HandleFunc("/all", handlers.GetAllUsers_handler).Methods("GET")
 
 	router.HandleFunc("/login", handlers.Login_handler).Methods("POST")

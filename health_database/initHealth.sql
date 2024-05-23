@@ -13,5 +13,7 @@ CREATE TABLE IF NOT EXISTS health (
 );
 
 INSERT INTO health (name, endpoint, frequency, email) VALUES
-('users', 'http://user_server:8080/api/health', 120, 'judaniel.cardona@gmail.com'),
-('logs', 'http://logs_server:8081/logs/health', 130, 'judaniel.cardona@gmail.com');
+('users', 'http://user_server:8080/user/health', 120, 'judaniel.cardona@gmail.com'),
+('logs', 'http://logs_server:8081/logs/health', 120, 'judaniel.cardona@gmail.com'),
+('gateway', 'http://gateway_server:8084/api/health', 120, 'judaniel.cardona@gmail.com'),
+('profiles', 'http://profile_server:8082/logs/health', 120, 'judaniel.cardona@gmail.com');

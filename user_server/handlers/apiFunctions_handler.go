@@ -126,19 +126,18 @@ func CreateProfile(token string, user *models.User) {
 		return
 	}
 
-	fmt.Println("Respuesta del servidor:", string(body))
+	fmt.Println("Profile server:", string(body))
 }
 
 func UpdateUser_handler(w http.ResponseWriter, r *http.Request) {
-
 	var user models.User
 	err := json.NewDecoder(r.Body).Decode(&user)
 	if err != nil {
-		http.Error(w, "Error: Problem to covert JSON", http.StatusBadRequest)
+		http.Error(w, "Error: Problem to convert JSON", http.StatusBadRequest)
 		return
 	}
 
-	if !security.IsValidToken(r, strconv.Itoa(user.Id)) {
+	if !security.IsValidToken(r, user.Email) {
 		http.Error(w, "Error: Invalid token", http.StatusUnauthorized)
 		log := models.Log{
 			AppName:     "USERS-API",
@@ -186,6 +185,61 @@ func UpdateUser_handler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	w.Write(formattedJSON)
+
+	UpdateProfile(r, updatedUser)
+}
+
+func UpdateProfile(r *http.Request, user models.User) {
+
+	token := security.ExtractToken(r)
+
+	profile := models.Profile{
+		Name:         user.Name,
+		URL:          "",
+		Nickname:     "",
+		Public_Info:  "",
+		Messaging:    "",
+		Biography:    "",
+		Organization: "",
+		Country:      "",
+		Social_Media: "",
+		Email:        user.Email,
+	}
+
+	jsonData, err := json.Marshal(profile)
+	if err != nil {
+		fmt.Println("Error al convertir datos a JSON:", err)
+		return
+	}
+
+	PROFILE_URL := "http://localhost:8083/profile/update"
+
+	req, err := http.NewRequest("PUT", PROFILE_URL, bytes.NewBuffer(jsonData))
+	if err != nil {
+		fmt.Println("Error al crear solicitud HTTP:", err)
+		return
+	}
+
+	req.Header.Set("Content-Type", "application/json")
+
+	req.Header.Set("Authorization", "Bearer "+token)
+
+	client := &http.Client{}
+
+	resp, err := client.Do(req)
+	if err != nil {
+		fmt.Println("Error al enviar solicitud HTTP:", err)
+		return
+	}
+	defer resp.Body.Close()
+
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		fmt.Println("Error al leer cuerpo de la respuesta:", err)
+		return
+	}
+
+	fmt.Println("Profile server:", string(body))
 }
 
 func DeleteUser_handler(w http.ResponseWriter, r *http.Request) {
@@ -208,7 +262,7 @@ func DeleteUser_handler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if !security.IsValidToken(r, strconv.Itoa(user.Id)) {
+	if !security.IsValidToken(r, user.Email) {
 		http.Error(w, "Error: Invalid token", http.StatusUnauthorized)
 		log := models.Log{
 			AppName:     "USERS-API",
@@ -240,9 +294,45 @@ func DeleteUser_handler(w http.ResponseWriter, r *http.Request) {
 
 	w.WriteHeader(http.StatusOK)
 	fmt.Fprintf(w, "\nOK: User with ID %d was deleted.\n", user.Id)
+
+	DeleteProfile(r, user)
 }
 
-func GetUserById_handler(w http.ResponseWriter, r *http.Request) {
+func DeleteProfile(r *http.Request, user *models.User) {
+
+	token := security.ExtractToken(r)
+
+	PROFILE_URL := "http://localhost:8083/profile/delete/" + user.Email
+
+	req, err := http.NewRequest("DELETE", PROFILE_URL, nil)
+	if err != nil {
+		fmt.Println("Error al crear solicitud HTTP:", err)
+		return
+	}
+
+	req.Header.Set("Content-Type", "application/json")
+
+	req.Header.Set("Authorization", "Bearer "+token)
+
+	client := &http.Client{}
+
+	resp, err := client.Do(req)
+	if err != nil {
+		fmt.Println("Error al enviar solicitud HTTP:", err)
+		return
+	}
+	defer resp.Body.Close()
+
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		fmt.Println("Error al leer cuerpo de la respuesta:", err)
+		return
+	}
+
+	fmt.Println("Profile server:", string(body))
+}
+
+func GetUserByEmail_handler(w http.ResponseWriter, r *http.Request) {
 	if !security.IsValidToken(r, "") {
 		http.Error(w, "Error: Invalid token", http.StatusUnauthorized)
 		log := models.Log{
@@ -258,9 +348,9 @@ func GetUserById_handler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	params := mux.Vars(r)
-	user, err := database.GetUserById(params["id"])
+	user, err := database.GetUserByEmail(params["email"])
 	if err != nil {
-		http.Error(w, "Error: Failed to search user id ("+params["id"]+")", http.StatusNotFound)
+		http.Error(w, "Error: Failed to search user id ("+params["email"]+")", http.StatusNotFound)
 		log := models.Log{
 			AppName:     "USERS-API",
 			LogType:     "ERROR",
@@ -379,6 +469,10 @@ func Login_handler(w http.ResponseWriter, r *http.Request) {
 
 	var user models.User
 	json.NewDecoder(r.Body).Decode(&user)
+
+	userJSON, _ := json.Marshal(user)
+	fmt.Println("Solicitud recibida:", string(userJSON))
+
 	_, err := database.SearchUser(&user)
 
 	if user.Email == "" || user.Password == "" {
@@ -497,7 +591,7 @@ func RecoverPassword_handler(w http.ResponseWriter, r *http.Request) {
 
 func UpdatePassword_handler(w http.ResponseWriter, r *http.Request) {
 
-	var user models.User
+	var user *models.User
 	err := json.NewDecoder(r.Body).Decode(&user)
 	if err != nil {
 		http.Error(w, "Error: Invalid JSON", http.StatusBadRequest)

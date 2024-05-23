@@ -29,17 +29,17 @@ func GetUsers(page, pageSize int) ([]models.User, error) {
 	return users, nil
 }
 
-func GetUserById(id string) (*models.User, error) {
-
-	var user models.User
-	if err := DB.First(&user, id).Error; err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, errors.New("Error: User not found")
-		}
-		return nil, err
-	}
-	return &user, nil
+func GetUserByEmail(email string) (*models.User, error) {
+    var user models.User
+    if err := DB.Where("email = ?", email).First(&user).Error; err != nil {
+        if errors.Is(err, gorm.ErrRecordNotFound) {
+            return nil, errors.New("Error: User not found")
+        }
+        return nil, err
+    }
+    return &user, nil
 }
+
 
 func AddUser(addUser models.User) (*models.User, error) {
 
@@ -57,7 +57,7 @@ func AddUser(addUser models.User) (*models.User, error) {
 	return &addUser, nil
 }
 
-func DeleteUser(deletedUser models.User) error {
+func DeleteUser(deletedUser *models.User) error {
 
 	var user models.User
 	if err := DB.Where("id = ?", deletedUser.Id).First(&user).Error; err != nil {
@@ -73,23 +73,17 @@ func DeleteUser(deletedUser models.User) error {
 
 func UpdateUser(updatedUser models.User) (models.User, error) {
 	var user models.User
-	if err := DB.Where("id = ?", updatedUser.Id).First(&user).Error; err != nil {
+	if err := DB.Where("email = ?", updatedUser.Email).First(&user).Error; err != nil {
 		return models.User{}, errors.New("user not found")
+	}
+
+	if user.Email != updatedUser.Email {
+		fmt.Println("LOG: Email change prevented.")
 	}
 
 	oldPassword := user.Password
 	user.Name = updatedUser.Name
 	user.Date = updatedUser.Date
-	// Verificar si se está cambiando el correo electrónico
-	if user.Email != updatedUser.Email {
-		var existingUser models.User
-		// Verificar si el nuevo correo ya está en uso
-		if err := DB.Where("email = ?", updatedUser.Email).First(&existingUser).Error; err == nil {
-			fmt.Println("LOG: Email already in use. Email update prevented.")
-			return models.User{}, errors.New("Email already in use")
-		}
-		user.Email = updatedUser.Email
-	}
 
 	if user.Password != updatedUser.Password {
 		fmt.Println("LOG: Password change prevented.")
@@ -99,8 +93,7 @@ func UpdateUser(updatedUser models.User) (models.User, error) {
 		return models.User{}, err
 	}
 
-	// Recargar el usuario desde la base de datos para devolver el resultado actualizado
-	if err := DB.Where("id = ?", updatedUser.Id).First(&user).Error; err != nil {
+	if err := DB.Where("email = ?", updatedUser.Email).First(&user).Error; err != nil {
 		return models.User{}, errors.New("failed to reload user from database")
 	}
 
@@ -119,17 +112,9 @@ func RecoverPassword(email string) (string, error) {
 	return userToUpdate.Password, nil
 }
 
-func GetUserByEmail(email string) (models.User, error) {
 
-	var user models.User
-	err := DB.Where("email = ?", email).First(&user).Error
-	if err != nil {
-		return user, err
-	}
-	return user, nil
-}
 
-func UpdatePassword(user models.User) (string, error) {
+func UpdatePassword(user *models.User) (string, error) {
 
 	var userToUpdate models.User
 	if err := DB.Where("email = ?", user.Email).First(&userToUpdate).Error; err != nil {

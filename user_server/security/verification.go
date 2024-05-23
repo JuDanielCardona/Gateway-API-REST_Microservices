@@ -3,7 +3,6 @@ package security
 import (
 	"fmt"
 	"net/http"
-	"strconv"
 	"strings"
 	"time"
 	"user_server/models"
@@ -96,19 +95,19 @@ func IsValidToken(r *http.Request, sub string) bool {
 	}
 
 	if sub != "" {
-		subFromTokenFloat, ok := claims["sub"].(float64)
-		if !ok {
-			fmt.Println("Error: Failed to convert sub claim to float64")
-			return false
-		}
-		subFromToken := strconv.FormatFloat(subFromTokenFloat, 'f', -1, 64)
-		if subFromToken != sub {
+		if claims["sub"] != sub {
 			fmt.Println("Error: User in token does not match expected user")
 			return false
 		}
 	}
 
 	return true
+}
+
+func ExtractToken(r *http.Request) string {
+	authHeader := r.Header.Get("Authorization")
+	token := strings.Replace(authHeader, "Bearer ", "", 1)
+	return token
 }
 
 func GetUserByToken(r *http.Request) string {

@@ -71,6 +71,42 @@ services:
     expose:
       - "8082"
 
+  profile_server:
+    build:
+      context: ./profile_server
+    container_name: profile_server
+    environment:
+      - PS_DATABASE_URL=profile_database
+      - PS_USER=admin
+      - PS_PASSWORD=12345
+      - PS_DBNAME=profiles_db
+      - PS_PORT=5432
+      - PS_NATS_SERVER=nats
+    depends_on:
+      - profile_database
+      - user_server
+      - nats
+    ports:
+      - "8083:8083"
+    expose:
+      - "8083"
+
+  gateway_server:
+    build:
+      context: ./gateway_server
+    container_name: gateway_server
+    environment:
+      - GS_NATS_SERVER=nats
+    depends_on:
+      - user_server
+      - logs_server
+      - profile_server
+      - nats
+    ports:
+      - "8084:8084"
+    expose:
+      - "8084"
+
   user_database:
     build:
       context: ./user_database
@@ -85,6 +121,11 @@ services:
     build:
       context: ./health_database
     container_name: health_database
+
+  profile_database:
+    build:
+      context: ./profile_database
+    container_name: profile_database
 
 # jenkins:
 #   image: jenkins/jenkins:lts
